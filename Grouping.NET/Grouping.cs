@@ -2,6 +2,11 @@
 
 namespace Grouping;
 
+/// <summary>
+///     A <see cref="IGrouping{TKey, TElement}"/> collection that is grouped by a key.
+/// </summary>
+/// <typeparam name="TKey">The key type of this grouping.</typeparam>
+/// <typeparam name="T">The element type of this grouping.</typeparam>
 public class Grouping<TKey, TElement> : IGrouping<TKey, TElement>, IEnumerable<TElement>, IEnumerable
     where TKey : notnull
 {
