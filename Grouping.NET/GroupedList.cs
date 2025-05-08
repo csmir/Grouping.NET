@@ -1,6 +1,4 @@
-﻿using System.Collections;
-
-namespace Grouping;
+﻿namespace Grouping;
 
 /// <summary>
 ///     A <see cref="List{T}"/> that is grouped by a key.

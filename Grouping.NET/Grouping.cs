@@ -7,7 +7,7 @@ namespace Grouping;
 /// </summary>
 /// <typeparam name="TKey">The key type of this grouping.</typeparam>
 /// <typeparam name="T">The element type of this grouping.</typeparam>
-public class Grouping<TKey, T> : IGrouping<TKey, T>, IEnumerable<T>, IEnumerable
+public class Grouping<TKey, T> : IGrouping<TKey, T>
     where TKey : notnull
 {
     private readonly IEnumerable<T> _elements;
