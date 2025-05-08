@@ -4,13 +4,16 @@ using System.Runtime.CompilerServices;
 namespace Grouping;
 
 /// <summary>
-///     
+///     A <see cref="IList{T}"/> collection that is grouped by a key.
 /// </summary>
-/// <typeparam name="TKey"></typeparam>
-/// <typeparam name="TElement"></typeparam>
-public class GroupedList<TKey, TElement> : IList<TElement>, IGrouping<TKey, TElement>, ICollection<TElement>, IEnumerable<TElement>, IEnumerable
+/// <typeparam name="TKey">The key type of this grouped list.</typeparam>
+/// <typeparam name="T">The element type of this grouped list.</typeparam>
+public class GroupedList<TKey, T> : IList<T>, IGrouping<TKey, T>, ICollection<T>, IEnumerable<T>, IEnumerable
+    where TKey : notnull
 {
-    internal TElement[] _items;
+    private readonly int _originalCapacity = 0;
+
+    internal T[] _items;
     internal int _size;
     internal int _version;
 
@@ -18,7 +21,7 @@ public class GroupedList<TKey, TElement> : IList<TElement>, IGrouping<TKey, TEle
     public TKey Key { get; }
 
     /// <inheritdoc />
-    public TElement this[int index]
+    public T this[int index]
     {
         get => _items[index];
         set => _items[index] = value;
@@ -28,32 +31,72 @@ public class GroupedList<TKey, TElement> : IList<TElement>, IGrouping<TKey, TEle
     public int Count
         => _size;
 
-    public GroupedList(IGrouping<TKey, TElement> enumerable)
+    /// <summary>
+    ///     Creates a new instance of <see cref="GroupedList{TKey, TElement}"/> with the specified key.
+    /// </summary>
+    /// <param name="key">The object to consider the key of this grouped list.</param>
+    public GroupedList(TKey key, int capacity)
     {
-        _items = [.. enumerable];
-        _size = _items.Length;
+        if (capacity < 0)
+            throw new ArgumentOutOfRangeException(nameof(capacity), "The capacity must be more than or equal to zero.");
 
-        Key = enumerable.Key;
-    }
+        _originalCapacity = capacity;
 
-    public GroupedList(TKey key, IEnumerable<TElement> enumerable)
-    {
-        _items = [.. enumerable];
-        _size = _items.Length;
+        _items = new T[_originalCapacity];
+        _size = 0;
+        _version = 0;
 
         Key = key;
     }
 
-    public void Add(TElement item)
+    /// <summary>
+    ///     Creates a new instance of <see cref="GroupedList{TKey, TElement}"/> with the specified grouping.
+    /// </summary>
+    /// <param name="enumerable">The grouping to consider the key and elements of this grouped list.</param>
+    public GroupedList(IGrouping<TKey, T> enumerable)
     {
+        _items = [.. enumerable];
+        _size = _items.Length;
+        _version = 0;
+
+        Key = enumerable.Key;
+    }
+
+    /// <summary>
+    ///     Creates a new instance of <see cref="GroupedList{TKey, TElement}"/> with the specified key and enumerable.
+    /// </summary>
+    /// <param name="key">The object to consider the key of this grouped list.</param>
+    /// <param name="enumerable">The values to consider the elements of this grouped list.</param>
+    public GroupedList(TKey key, IEnumerable<T> enumerable)
+    {
+        _items = [.. enumerable];
+        _size = _items.Length;
+        _version = 0;
+
+        Key = key;
+    }
+
+    /// <inheritdoc />
+    public void Add(T item)
+    {
+        if (_size == _items.Length)
+        {
+            // Resize the array to make room for the new item.
+            Array.Resize(ref _items, _size + 1);
+        }
+        else if (_size < _items.Length)
+        {
+            // Shift the items to the right to make room for the new item.
+            Array.Copy(_items, _size, _items, _size + 1, _items.Length - _size - 1);
+        }
+
+        // Add the new item to the end of the array.
+        _items[_size] = item;
         _size++;
-        Array.Resize(ref _items, _size);
-
-        _items[^1] = item;
-
         _version++;
     }
 
+    /// <inheritdoc />
     public void Clear()
     {
         // It's already 0, don't do anything.
@@ -66,22 +109,27 @@ public class GroupedList<TKey, TElement> : IList<TElement>, IGrouping<TKey, TEle
         _version++;
     }
 
-    public bool Contains(TElement item)
+    /// <inheritdoc />
+    public bool Contains(T item)
         => _items.Length != 0 && IndexOf(item) >= 0;
 
-    public void CopyTo(TElement[] array, int arrayIndex)
+    /// <inheritdoc />
+    public void CopyTo(T[] array, int arrayIndex)
         => Array.Copy(_items, 0, array!, arrayIndex, _size);
 
-    public IEnumerator<TElement> GetEnumerator()
+    /// <inheritdoc />
+    public IEnumerator<T> GetEnumerator()
         => new Enumerator(this);
 
-    public int IndexOf(TElement item)
+    /// <inheritdoc />
+    public int IndexOf(T item)
         => Array.IndexOf(_items, item);
 
-    public void Insert(int index, TElement item)
+    /// <inheritdoc />
+    public void Insert(int index, T item)
     {
         if ((uint)index > (uint)_size)
-            throw new IndexOutOfRangeException("The index must be more than zero and equal to or less than the size -plus one during insertion- of the collection.");
+            throw new ArgumentOutOfRangeException(nameof(index), "The index must be more than zero and equal to or less than the size -plus one during insertion- of the collection.");
 
         if (_size == _items.Length)
         {
@@ -96,7 +144,8 @@ public class GroupedList<TKey, TElement> : IList<TElement>, IGrouping<TKey, TEle
         _version++;
     }
 
-    public bool Remove(TElement item)
+    /// <inheritdoc />
+    public bool Remove(T item)
     {
         var indexOf = IndexOf(item);
 
@@ -109,35 +158,30 @@ public class GroupedList<TKey, TElement> : IList<TElement>, IGrouping<TKey, TEle
         return false;
     }
 
+    /// <inheritdoc />
     public void RemoveAt(int index)
     {
         if ((uint)index >= (uint)_size)
-            throw new IndexOutOfRangeException("The index must be more than zero and equal to or less than the size of the collection.");
+            throw new ArgumentOutOfRangeException(nameof(index), "The index must be more than zero and equal to or less than the size of the collection.");
 
         _size--;
         if (index < _size)
             Array.Copy(_items, index + 1, _items, index, _size - index);
 
-        if (RuntimeHelpers.IsReferenceOrContainsReferences<TElement>())
+        if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
             _items[_size] = default!;
 
         _version++;
     }
 
-    bool ICollection<TElement>.IsReadOnly
-        => false;
-
-    IEnumerator IEnumerable.GetEnumerator()
-        => GetEnumerator();
-
-    public struct Enumerator : IEnumerator<TElement>, IEnumerator
+    public struct Enumerator : IEnumerator<T>, IEnumerator
     {
-        private readonly GroupedList<TKey, TElement> _list;
+        private readonly GroupedList<TKey, T> _list;
         private int _index;
         private readonly int _version;
-        private TElement? _current;
+        private T? _current;
 
-        internal Enumerator(GroupedList<TKey, TElement> list)
+        internal Enumerator(GroupedList<TKey, T> list)
         {
             _list = list;
             _index = 0;
@@ -145,10 +189,12 @@ public class GroupedList<TKey, TElement> : IList<TElement>, IGrouping<TKey, TEle
             _current = default;
         }
 
+        /// <inheritdoc />
         public readonly void Dispose()
         {
         }
 
+        /// <inheritdoc />
         public bool MoveNext()
         {
             var localList = _list;
@@ -162,6 +208,7 @@ public class GroupedList<TKey, TElement> : IList<TElement>, IGrouping<TKey, TEle
             return MoveNextRare();
         }
 
+        /// <inheritdoc />
         private bool MoveNextRare()
         {
             if (_version != _list._version)
@@ -172,7 +219,10 @@ public class GroupedList<TKey, TElement> : IList<TElement>, IGrouping<TKey, TEle
             return false;
         }
 
-        public readonly TElement Current => _current!;
+        /// <inheritdoc />
+        public readonly T Current => _current!;
+
+        #region Internal
 
         readonly object? IEnumerator.Current
         {
@@ -193,5 +243,18 @@ public class GroupedList<TKey, TElement> : IList<TElement>, IGrouping<TKey, TEle
             _index = 0;
             _current = default;
         }
+
+        #endregion
     }
+
+    #region Internal
+
+    bool ICollection<T>.IsReadOnly
+        => false;
+
+    IEnumerator IEnumerable.GetEnumerator()
+        => GetEnumerator();
+
+    #endregion
+
 }
