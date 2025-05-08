@@ -7,22 +7,31 @@ namespace Grouping;
 /// </summary>
 /// <typeparam name="TKey">The key type of this grouping.</typeparam>
 /// <typeparam name="T">The element type of this grouping.</typeparam>
-public class Grouping<TKey, TElement> : IGrouping<TKey, TElement>, IEnumerable<TElement>, IEnumerable
+public class Grouping<TKey, T> : IGrouping<TKey, T>, IEnumerable<T>, IEnumerable
     where TKey : notnull
 {
-    private readonly IEnumerable<TElement> _elements;
+    private readonly IEnumerable<T> _elements;
 
     /// <inheritdoc />
     public TKey Key { get; }
 
-    public Grouping(IGrouping<TKey, TElement> enumerable)
+    /// <summary>
+    ///     Creates a new instance of <see cref="Grouping{TKey, TElement}"/> with the specified grouping.
+    /// </summary>
+    /// <param name="enumerable"></param>
+    public Grouping(IGrouping<TKey, T> enumerable)
     {
         _elements = enumerable;
 
         Key = enumerable.Key;
     }
 
-    public Grouping(TKey key, IEnumerable<TElement> enumerable)
+    /// <summary>
+    ///     Creates a new instance of <see cref="Grouping{TKey, TElement}"/> with the specified key and enumerable.
+    /// </summary>
+    /// <param name="key"></param>
+    /// <param name="enumerable"></param>
+    public Grouping(TKey key, IEnumerable<T> enumerable)
     {
         _elements = enumerable;
 
@@ -30,7 +39,7 @@ public class Grouping<TKey, TElement> : IGrouping<TKey, TElement>, IEnumerable<T
     }
 
     /// <inheritdoc />
-    public IEnumerator<TElement> GetEnumerator() 
+    public IEnumerator<T> GetEnumerator() 
         => _elements.GetEnumerator();
 
     IEnumerator IEnumerable.GetEnumerator() 

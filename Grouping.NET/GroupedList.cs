@@ -7,7 +7,7 @@ namespace Grouping;
 /// </summary>
 /// <typeparam name="TKey">The key type of this grouped list.</typeparam>
 /// <typeparam name="T">The element type of this grouped list.</typeparam>
-public class GroupedList<TKey, T> : List<T>, IGrouping<TKey, T>, ICollection<T>, IEnumerable<T>, IEnumerable
+public class GroupedList<TKey, T> : List<T>, IGrouping<TKey, T>
     where TKey : notnull
 {
     /// <inheritdoc />
@@ -17,6 +17,7 @@ public class GroupedList<TKey, T> : List<T>, IGrouping<TKey, T>, ICollection<T>,
     ///     Creates a new instance of <see cref="GroupedList{TKey, TElement}"/> with the specified key.
     /// </summary>
     /// <param name="key">The object to consider the key of this grouped list.</param>
+    /// <param name="capacity">The initial capacity of this grouped list.</param>
     public GroupedList(TKey key, int capacity)
         : base(capacity) => Key = key;
 
